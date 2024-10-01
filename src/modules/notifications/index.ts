@@ -8,6 +8,7 @@ import {assetsActions} from '../assets'
 import {ASSETS_ACTIONS} from '../assets/actions'
 import {tagsActions} from '../tags'
 import {uploadsActions} from '../uploads'
+import { directoriesActions } from '../directories'
 
 type Notification = {
   asset?: ImageAsset
@@ -161,16 +162,36 @@ export const notificationsTagCreateCompleteEpic: MyEpic = action$ =>
     mergeMap(() => of(notificationsSlice.actions.add({status: 'info', title: `Tag created`})))
   )
 
+export const notificationsDirectoryCreateCompleteEpic: MyEpic = action$ =>
+  action$.pipe(
+    filter(directoriesActions.createComplete.match),
+    mergeMap(() => of(notificationsSlice.actions.add({status: 'info', title: `Directory created`})))
+  )
+
 export const notificationsTagDeleteCompleteEpic: MyEpic = action$ =>
   action$.pipe(
     filter(tagsActions.deleteComplete.match),
     mergeMap(() => of(notificationsSlice.actions.add({status: 'info', title: `Tag deleted`})))
   )
 
+export const notificationsDirectoryDeleteCompleteEpic: MyEpic = action$ =>
+  action$.pipe(
+    filter(directoriesActions.deleteComplete.match),
+    mergeMap(() => of(notificationsSlice.actions.add({status: 'info', title: `Directory deleted`})))
+  )
+
+
 export const notificationsTagUpdateCompleteEpic: MyEpic = action$ =>
   action$.pipe(
     filter(tagsActions.updateComplete.match),
     mergeMap(() => of(notificationsSlice.actions.add({status: 'info', title: `Tag updated`})))
+  )
+
+
+export const notificationsDirectoryUpdateCompleteEpic: MyEpic = action$ =>
+  action$.pipe(
+    filter(directoriesActions.updateComplete.match),
+    mergeMap(() => of(notificationsSlice.actions.add({status: 'info', title: `Directory updated`})))
   )
 
 export const notificationsActions = notificationsSlice.actions

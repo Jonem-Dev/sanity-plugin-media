@@ -5,6 +5,7 @@ import DialogAssetEdit from '../DialogAssetEdit'
 import DialogConfirm from '../DialogConfirm'
 import DialogSearchFacets from '../DialogSearchFacets'
 import DialogTagCreate from '../DialogTagCreate'
+import DialogDirectoryCreate from '../DialogDirectoryCreate'
 import DialogTagEdit from '../DialogTagEdit'
 import DialogTags from '../DialogTags'
 
@@ -49,6 +50,14 @@ const Dialogs = () => {
         <DialogTagCreate dialog={dialog} key={index}>
           {childDialogs}
         </DialogTagCreate>
+      )
+    }
+
+    if (dialog.type === 'directoryCreate') {
+      return (
+        <DialogDirectoryCreate dialog={dialog} key={index}>
+          {childDialogs}
+        </DialogDirectoryCreate>
       )
     }
 

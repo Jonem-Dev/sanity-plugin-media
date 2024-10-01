@@ -5,6 +5,11 @@ export const tagOptionSchema = z.object({
   value: z.string().trim().min(1, {message: 'Value cannot be empty'})
 })
 
+export const directoryOptionsSchema = z.object({
+  label: z.string().trim().min(1, {message: 'Label cannot be empty'}),
+  value: z.string().trim().min(1, {message: 'Value cannot be empty'})
+})
+
 export const assetFormSchema = z.object({
   altText: z.string().trim().optional(),
   creditLine: z.string().trim().optional(),
@@ -19,5 +24,9 @@ export const assetFormSchema = z.object({
 })
 
 export const tagFormSchema = z.object({
+  name: z.string().min(1, {message: 'Name cannot be empty'})
+})
+
+export const directoryFormSchema = z.object({
   name: z.string().min(1, {message: 'Name cannot be empty'})
 })

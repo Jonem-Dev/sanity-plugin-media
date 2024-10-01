@@ -70,7 +70,11 @@ const DialogAssetEdit = (props: Props) => {
         creditLine: asset?.creditLine || '',
         description: asset?.description || '',
         originalFilename: asset?.originalFilename || '',
-        opt: {media: {tags: assetTagOptions}},
+        opt: {
+          media: {
+            tags: assetTagOptions
+          }
+        },
         title: asset?.title || ''
       }
     },

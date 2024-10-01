@@ -149,7 +149,17 @@ const CardAsset = (props: Props) => {
   const opacityPreview = selected || updating ? 0.25 : 1
 
   return (
-    <CardWrapper padding={1}>
+    <CardWrapper
+      padding={1}
+      draggable
+      onDragStart={(e: React.DragEvent<HTMLDivElement>) => {
+        const ghostEl: Element = e.currentTarget.cloneNode(true) as Element
+        ghostEl.className += ' drag-ghost'
+        document.body.appendChild(ghostEl)
+        e.dataTransfer.setDragImage(ghostEl, 0, 0)
+        e.dataTransfer.setData('assetId', asset._id)
+      }}
+    >
       <CardContainer direction="column" picked={picked} updating={item.updating}>
         {/* Image */}
         <Box

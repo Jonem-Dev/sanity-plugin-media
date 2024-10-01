@@ -8,6 +8,8 @@ import {combineEpics} from 'redux-observable'
 
 import assetsReducer, {
   assetsDeleteEpic,
+  assetsDirectoriesAddEpic,
+  assetsDirectoriesRemoveEpic,
   assetsFetchAfterDeleteAllEpic,
   assetsFetchEpic,
   assetsFetchNextPageEpic,
@@ -26,6 +28,8 @@ import assetsReducer, {
 import debugReducer from './debug'
 import dialogReducer, {
   dialogClearOnAssetUpdateEpic,
+  dialogDirectoryCreateEpic,
+  dialogDirectoryDeleteEpic,
   dialogTagCreateEpic,
   dialogTagDeleteEpic
 } from './dialog'
@@ -39,7 +43,10 @@ import notificationsReducer, {
   notificationsGenericErrorEpic,
   notificationsTagCreateCompleteEpic,
   notificationsTagDeleteCompleteEpic,
-  notificationsTagUpdateCompleteEpic
+  notificationsTagUpdateCompleteEpic,
+  notificationsDirectoryCreateCompleteEpic,
+  notificationsDirectoryDeleteCompleteEpic,
+  notificationsDirectoryUpdateCompleteEpic
 } from './notifications'
 import searchReducer, {searchFacetTagUpdateEpic} from './search'
 import tagsReducer, {
@@ -58,6 +65,16 @@ import uploadsReducer, {
   uploadsCheckRequestEpic,
   uploadsCompleteQueueEpic
 } from './uploads'
+import directoriesReducer, {
+  directoriesCreateEpic,
+  directoriesDeleteEpic,
+  directoriesFetchEpic,
+  directoriesListenerCreateQueueEpic,
+  directoriesListenerDeleteQueueEpic,
+  directoriesListenerUpdateQueueEpic,
+  directoriesSortEpic,
+  directoriesUpdateEpic
+} from './directories'
 
 export const rootEpic = combineEpics(
   assetsDeleteEpic,
@@ -73,11 +90,15 @@ export const rootEpic = combineEpics(
   assetsSortEpic,
   assetsTagsAddEpic,
   assetsTagsRemoveEpic,
+  assetsDirectoriesAddEpic,
+  assetsDirectoriesRemoveEpic,
   assetsUnpickEpic,
   assetsUpdateEpic,
   dialogClearOnAssetUpdateEpic,
   dialogTagCreateEpic,
+  dialogDirectoryCreateEpic,
   dialogTagDeleteEpic,
+  dialogDirectoryDeleteEpic,
   notificationsAssetsDeleteErrorEpic,
   notificationsAssetsDeleteCompleteEpic,
   notificationsAssetsTagsAddCompleteEpic,
@@ -85,8 +106,11 @@ export const rootEpic = combineEpics(
   notificationsAssetsUpdateCompleteEpic,
   notificationsGenericErrorEpic,
   notificationsTagCreateCompleteEpic,
+  notificationsDirectoryCreateCompleteEpic,
   notificationsTagDeleteCompleteEpic,
+  notificationsDirectoryDeleteCompleteEpic,
   notificationsTagUpdateCompleteEpic,
+  notificationsDirectoryUpdateCompleteEpic,
   searchFacetTagUpdateEpic,
   tagsCreateEpic,
   tagsDeleteEpic,
@@ -96,6 +120,14 @@ export const rootEpic = combineEpics(
   tagsListenerUpdateQueueEpic,
   tagsSortEpic,
   tagsUpdateEpic,
+  directoriesCreateEpic,
+  directoriesDeleteEpic,
+  directoriesFetchEpic,
+  directoriesListenerCreateQueueEpic,
+  directoriesListenerDeleteQueueEpic,
+  directoriesListenerUpdateQueueEpic,
+  directoriesSortEpic,
+  directoriesUpdateEpic,
   uploadsAssetStartEpic,
   uploadsAssetUploadEpic,
   uploadsCheckRequestEpic,
@@ -110,6 +142,7 @@ const reducers = {
   search: searchReducer,
   selected: selectedReducer,
   tags: tagsReducer,
+  directories: directoriesReducer,
   uploads: uploadsReducer
 }
 

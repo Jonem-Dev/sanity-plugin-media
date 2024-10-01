@@ -1,5 +1,10 @@
 import {createSelector, createSlice, PayloadAction} from '@reduxjs/toolkit'
-import type {ClientError, SanityAssetDocument, SanityImageAssetDocument} from '@sanity/client'
+import type {
+  ClientError,
+  SanityAssetDocument,
+  SanityImageAssetDocument,
+  Transaction
+} from '@sanity/client'
 import type {HttpError, MyEpic, SanityUploadProgressEvent, UploadItem} from '@types'
 import groq from 'groq'
 import {Selector} from 'react-redux'
@@ -8,9 +13,10 @@ import {catchError, delay, filter, mergeMap, takeUntil, withLatestFrom} from 'rx
 import constructFilter from '../../utils/constructFilter'
 import {generatePreviewBlobUrl$} from '../../utils/generatePreviewBlobUrl'
 import {hashFile$, uploadAsset$} from '../../utils/uploadSanityAsset'
-import {assetsActions} from '../assets'
+import {assetsActions, patchOperationDirectoryAppend} from '../assets'
 import type {RootReducerState} from '../types'
 import {UPLOADS_ACTIONS} from './actions'
+import {ASSETS_ACTIONS} from '../assets/actions'
 
 export type UploadsReducerState = {
   allIds: string[]
@@ -229,18 +235,24 @@ export const uploadsCheckRequestEpic: MyEpic = (action$, state$, {client}) =>
 
       const documentIds = assets.map(asset => asset._id)
 
-      const constructedFilter = constructFilter({
-        assetTypes: state.assets.assetTypes,
-        searchFacets: state.search.facets,
-        searchQuery: state.search.query
-      })
-
       const query = groq`
-        *[${constructedFilter} && _id in $documentIds].sha1hash
+        *[_id in $documentIds].sha1hash
       `
 
       return of(action).pipe(
         delay(1000), // give Sanity some time to register the recently uploaded asset
+        mergeMap(() => {
+          const directory = state.directories.activeDirectory
+          if (directory) {
+            const transaction: Transaction = documentIds.reduce(
+              (tx, id) => tx.patch(id, patchOperationDirectoryAppend({directory})),
+              client.transaction()
+            )
+
+            transaction.commit()
+          }
+          return of(null)
+        }),
         mergeMap(() => client.observable.fetch<string[]>(query, {documentIds})),
         mergeMap(resultHashes => {
           const checkedResults = assets.reduce((acc: Record<string, string | null>, asset) => {

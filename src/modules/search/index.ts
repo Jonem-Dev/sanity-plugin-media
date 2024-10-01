@@ -1,11 +1,18 @@
 import {PayloadAction, createSelector, createSlice} from '@reduxjs/toolkit'
-import type {MyEpic, SearchFacetInputProps, SearchFacetOperatorType, WithId} from '@types'
+import type {
+  DirectoryItem,
+  MyEpic,
+  SearchFacetInputProps,
+  SearchFacetOperatorType,
+  WithId
+} from '@types'
 import {empty, of} from 'rxjs'
 import {filter, mergeMap, withLatestFrom} from 'rxjs/operators'
 import {uuid} from '@sanity/uuid'
 
 import {tagsActions} from '../tags'
 import type {RootReducerState} from '../types'
+import {inputs} from '../../config/searchFacets'
 
 // TODO: don't store non-serializable data in the search store
 // (The main offender is `fieldModifier` which is currently a function)
@@ -47,6 +54,38 @@ const searchSlice = createSlice({
             facet.value?.value === action.payload.tagId
           )
       )
+    },
+
+    // Remove search facet by directory
+    facetsRemoveByDirectory(state, action: PayloadAction<{directoryId: string}>) {
+      state.facets = state.facets.filter(
+        facet =>
+          !(
+            facet.name === 'directory' &&
+            facet.type === 'searchable' &&
+            (facet.operatorType === 'references' || facet.operatorType === 'doesNotReference') &&
+            facet.value?.value === action.payload.directoryId
+          )
+      )
+    },
+    facetsSetDirectory(state, action: PayloadAction<{directory: DirectoryItem | null}>) {
+      const {directory} = action.payload
+      state.facets = state.facets.filter(facet => !(facet.name === 'directory'))
+
+      if (directory) {
+        const searchFacet = {
+          ...inputs.directory,
+          value: {
+            label: directory.directory?.name,
+            value: directory.directory?._id
+          }
+        } as SearchFacetInputProps
+
+        state.facets.push({
+          ...searchFacet,
+          id: uuid()
+        })
+      }
     },
     // Remove search facet by name
     facetsRemoveById(state, action: PayloadAction<{facetId: string}>) {
@@ -159,6 +198,21 @@ export const selectIsSearchFacetTag = createSelector(
         facet.type === 'searchable' &&
         (facet.operatorType === 'references' || facet.operatorType === 'doesNotReference') &&
         facet.value?.value === tagId
+    )
+)
+
+export const selectIsSearchFacetDirectory = createSelector(
+  [
+    (state: RootReducerState) => state.search.facets,
+    (_state: RootReducerState, directoryId: string) => directoryId
+  ],
+  (searchFacets, directoryId) =>
+    searchFacets.some(
+      facet =>
+        facet.name === 'directory' &&
+        facet.type === 'searchable' &&
+        (facet.operatorType === 'references' || facet.operatorType === 'doesNotReference') &&
+        facet.value?.value === directoryId
     )
 )
 

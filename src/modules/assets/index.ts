@@ -5,6 +5,7 @@ import {
   AssetItem,
   AssetType,
   BrowserView,
+  Directory,
   HttpError,
   MyEpic,
   Order,
@@ -33,6 +34,7 @@ import {searchActions} from '../search'
 import type {RootReducerState} from '../types'
 import {UPLOADS_ACTIONS} from '../uploads/actions'
 import {ASSETS_ACTIONS} from './actions'
+
 type ItemError = {
   description: string
   id: string
@@ -112,7 +114,21 @@ const assetsSlice = createSlice({
           state.byIds[asset.asset._id].updating = false
         })
       })
+      .addCase(ASSETS_ACTIONS.directoriesAddComplete, (state, action) => {
+        const {assets} = action.payload
+        assets.forEach(asset => {
+          // remove from all ids
+          state.allIds = state.allIds.filter(id => id !== asset.asset._id)
+          delete state.byIds[asset.asset._id]
+        })
+      })
       .addCase(ASSETS_ACTIONS.tagsAddError, (state, action) => {
+        const {assets} = action.payload
+        assets.forEach(asset => {
+          state.byIds[asset.asset._id].updating = false
+        })
+      })
+      .addCase(ASSETS_ACTIONS.directoriesAddError, (state, action) => {
         const {assets} = action.payload
         assets.forEach(asset => {
           state.byIds[asset.asset._id].updating = false
@@ -124,7 +140,21 @@ const assetsSlice = createSlice({
           state.byIds[asset.asset._id].updating = true
         })
       })
+      .addCase(ASSETS_ACTIONS.directoriesAddRequest, (state, action) => {
+        console.log('asset module')
+        const {assets} = action.payload
+        assets.forEach(asset => {
+          state.byIds[asset.asset._id].updating = true
+        })
+      })
       .addCase(ASSETS_ACTIONS.tagsRemoveComplete, (state, action) => {
+        const {assets} = action.payload
+        assets.forEach(asset => {
+          state.byIds[asset.asset._id].updating = false
+        })
+      })
+
+      .addCase(ASSETS_ACTIONS.directoriesRemoveComplete, (state, action) => {
         const {assets} = action.payload
         assets.forEach(asset => {
           state.byIds[asset.asset._id].updating = false
@@ -136,7 +166,20 @@ const assetsSlice = createSlice({
           state.byIds[asset.asset._id].updating = false
         })
       })
+
+      .addCase(ASSETS_ACTIONS.directoriesRemoveError, (state, action) => {
+        const {assets} = action.payload
+        assets.forEach(asset => {
+          state.byIds[asset.asset._id].updating = false
+        })
+      })
       .addCase(ASSETS_ACTIONS.tagsRemoveRequest, (state, action) => {
+        const {assets} = action.payload
+        assets.forEach(asset => {
+          state.byIds[asset.asset._id].updating = true
+        })
+      })
+      .addCase(ASSETS_ACTIONS.directoriesRemoveRequest, (state, action) => {
         const {assets} = action.payload
         assets.forEach(asset => {
           state.byIds[asset.asset._id].updating = true
@@ -506,6 +549,10 @@ const filterAssetWithoutTag = (tag: Tag) => (asset: AssetItem) => {
   return tagIndex < 0
 }
 
+const filterAssetWithoutDirectory = (directory: Directory) => (asset: AssetItem) => {
+  return asset?.asset?.opt?.media?.directory?._ref !== directory?._id
+}
+
 const patchOperationTagAppend =
   ({tag}: {tag: Tag}) =>
   (patch: Patch) =>
@@ -515,10 +562,30 @@ const patchOperationTagAppend =
       .setIfMissing({'opt.media.tags': []})
       .append('opt.media.tags', [{_key: nanoid(), _ref: tag?._id, _type: 'reference', _weak: true}])
 
+export const patchOperationDirectoryAppend =
+  ({directory}: {directory: Directory}) =>
+  (patch: Patch) =>
+    patch
+      .setIfMissing({opt: {}})
+      .setIfMissing({'opt.media': {}})
+      .set({
+        'opt.media.directory': {
+          _key: nanoid(),
+          _ref: directory?._id,
+          _type: 'reference',
+          _weak: true
+        }
+      })
+
 const patchOperationTagUnset =
   ({asset, tag}: {asset: AssetItem; tag: Tag}) =>
   (patch: Patch) =>
     patch.ifRevisionId(asset?.asset?._rev).unset([`opt.media.tags[_ref == "${tag._id}"]`])
+
+const patchOperationDirectoryUnset =
+  ({asset}: {asset: AssetItem}) =>
+  (patch: Patch) =>
+    patch.ifRevisionId(asset?.asset?._rev).unset([`opt.media.directory`])
 
 export const assetsRemoveTagsEpic: MyEpic = (action$, state$, {client}) => {
   return action$.pipe(
@@ -563,6 +630,52 @@ export const assetsRemoveTagsEpic: MyEpic = (action$, state$, {client}) => {
   )
 }
 
+export const assetsRemoveDirectoriesEpic: MyEpic = (action$, state$, {client}) => {
+  return action$.pipe(
+    filter(ASSETS_ACTIONS.directoriesAddRequest.match),
+    withLatestFrom(state$),
+    mergeMap(([action, state]) => {
+      const {assets, directory} = action.payload
+
+      console.log('asset remove directories epic')
+
+      return of(action).pipe(
+        // Optionally throttle
+        debugThrottle(state.debug.badConnection),
+        // Add directory references to all picked assets
+        mergeMap(() => {
+          const pickedAssets = selectAssetsPicked(state)
+
+          // Filter out picked assets which already include directory
+          const pickedAssetsFiltered = pickedAssets?.filter(filterAssetWithoutDirectory(directory))
+
+          const transaction: Transaction = pickedAssetsFiltered.reduce(
+            (tx, pickedAsset) =>
+              tx.patch(pickedAsset?.asset?._id, patchOperationDirectoryAppend({directory})),
+            client.transaction()
+          )
+
+          return from(transaction.commit())
+        }),
+        // Dispatch complete action
+        mergeMap(() => of(ASSETS_ACTIONS.directoriesAddComplete({assets, directory}))),
+        catchError((error: ClientError) =>
+          of(
+            ASSETS_ACTIONS.directoriesAddError({
+              assets,
+              error: {
+                message: error?.message || 'Internal error',
+                statusCode: error?.statusCode || 500
+              },
+              directory
+            })
+          )
+        )
+      )
+    })
+  )
+}
+
 export const assetsOrderSetEpic: MyEpic = action$ =>
   action$.pipe(
     filter(assetsActions.orderSet.match),
@@ -581,6 +694,7 @@ export const assetsSearchEpic: MyEpic = action$ =>
       searchActions.facetsClear.type,
       searchActions.facetsRemoveById.type,
       searchActions.facetsRemoveByName.type,
+      searchActions.facetsSetDirectory.type,
       searchActions.facetsRemoveByTag.type,
       searchActions.facetsUpdate.type,
       searchActions.facetsUpdateById.type,
@@ -682,6 +796,50 @@ export const assetsTagsAddEpic: MyEpic = (action$, state$, {client}) => {
   )
 }
 
+export const assetsDirectoriesAddEpic: MyEpic = (action$, state$, {client}) => {
+  return action$.pipe(
+    filter(ASSETS_ACTIONS.directoriesAddRequest.match),
+    withLatestFrom(state$),
+    mergeMap(([action, state]) => {
+      const {assets, directory} = action.payload
+
+      return of(action).pipe(
+        // Optionally throttle
+        debugThrottle(state.debug.badConnection),
+        // Add tag references to all picked assets
+        mergeMap(() => {
+          const pickedAssets = assets ? assets : selectAssetsPicked(state)
+
+          // Filter out picked assets which already include tag
+          const pickedAssetsFiltered = pickedAssets?.filter(filterAssetWithoutDirectory(directory))
+
+          const transaction: Transaction = pickedAssetsFiltered.reduce(
+            (tx, pickedAsset) =>
+              tx.patch(pickedAsset?.asset?._id, patchOperationDirectoryAppend({directory})),
+            client.transaction()
+          )
+
+          return from(transaction.commit())
+        }),
+        // Dispatch complete action
+        mergeMap(() => of(ASSETS_ACTIONS.directoriesAddComplete({assets, directory}))),
+        catchError((error: ClientError) =>
+          of(
+            ASSETS_ACTIONS.directoriesAddError({
+              assets,
+              error: {
+                message: error?.message || 'Internal error',
+                statusCode: error?.statusCode || 500
+              },
+              directory
+            })
+          )
+        )
+      )
+    })
+  )
+}
+
 export const assetsTagsRemoveEpic: MyEpic = (action$, state$, {client}) => {
   return action$.pipe(
     filter(ASSETS_ACTIONS.tagsRemoveRequest.match),
@@ -723,6 +881,47 @@ export const assetsTagsRemoveEpic: MyEpic = (action$, state$, {client}) => {
   )
 }
 
+export const assetsDirectoriesRemoveEpic: MyEpic = (action$, state$, {client}) => {
+  return action$.pipe(
+    filter(ASSETS_ACTIONS.directoriesRemoveRequest.match),
+    withLatestFrom(state$),
+    mergeMap(([action, state]) => {
+      const {assets, directory} = action.payload
+
+      return of(action).pipe(
+        // Optionally throttle
+        debugThrottle(state.debug.badConnection),
+        // Remove tag references from all picked assets
+        mergeMap(() => {
+          const pickedAssets = selectAssetsPicked(state)
+
+          const transaction: Transaction = pickedAssets.reduce(
+            (tx, pickedAsset) =>
+              tx.patch(pickedAsset?.asset?._id, patchOperationDirectoryUnset({asset: pickedAsset})),
+            client.transaction()
+          )
+
+          return from(transaction.commit())
+        }),
+        // Dispatch complete action
+        mergeMap(() => of(ASSETS_ACTIONS.directoriesRemoveComplete({assets, directory}))),
+        catchError((error: ClientError) =>
+          of(
+            ASSETS_ACTIONS.directoriesRemoveError({
+              assets,
+              error: {
+                message: error?.message || 'Internal error',
+                statusCode: error?.statusCode || 500
+              },
+              directory
+            })
+          )
+        )
+      )
+    })
+  )
+}
+
 export const assetsUnpickEpic: MyEpic = action$ =>
   action$.pipe(
     ofType(
@@ -732,6 +931,7 @@ export const assetsUnpickEpic: MyEpic = action$ =>
       searchActions.facetsClear.type,
       searchActions.facetsRemoveById.type,
       searchActions.facetsRemoveByName.type,
+      searchActions.facetsSetDirectory.type,
       searchActions.facetsRemoveByTag.type,
       searchActions.facetsUpdate.type,
       searchActions.facetsUpdateById.type,

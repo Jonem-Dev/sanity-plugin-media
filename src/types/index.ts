@@ -7,7 +7,13 @@ import type {
 } from '@sanity/client'
 import type {Epic} from 'redux-observable'
 import * as z from 'zod'
-import {assetFormSchema, tagFormSchema, tagOptionSchema} from '../formSchema'
+import {
+  assetFormSchema,
+  directoryFormSchema,
+  directoryOptionsSchema,
+  tagFormSchema,
+  tagOptionSchema
+} from '../formSchema'
 import {RootReducerState} from '../modules/types'
 
 export type MediaToolOptions = {
@@ -24,6 +30,7 @@ type CustomFields = {
   opt?: {
     media?: {
       tags?: SanityReference[]
+      directory?: SanityReference
     }
   }
   title?: string
@@ -81,8 +88,11 @@ export type Dialog =
   | DialogTagCreateProps
   | DialogTagEditProps
   | DialogTagsProps
+  | DialogDirectoriesProps
+  | DialogDirectoryCreateProps
+  | DialogDirectoryEditProps
 
-export type DialogAction = 'deleteAsset' | 'deleteTag'
+export type DialogAction = 'deleteAsset' | 'deleteTag' | 'deleteDirectory'
 
 export type DialogAssetEditProps = {
   assetId?: string
@@ -92,7 +102,12 @@ export type DialogAssetEditProps = {
     label: string
     value: string
   }
+  lastCreatedDirectory?: {
+    label: string
+    value: string
+  }
   lastRemovedTagIds?: string[]
+  lastRemoveDirectoryIds?: string[]
   type: 'assetEdit'
 }
 
@@ -120,10 +135,23 @@ export type DialogTagsProps = {
   type: 'tags'
 }
 
+export type DialogDirectoriesProps = {
+  closeDialogId?: string
+  id: string
+  type: 'directories'
+}
+
 export type DialogTagCreateProps = {
   closeDialogId?: string
   id: string
   type: 'tagCreate'
+}
+
+export type DialogDirectoryCreateProps = {
+  closeDialogId?: string
+  id: string
+  type: 'directoryCreate'
+  directory: DirectoryItem
 }
 
 export type DialogTagEditProps = {
@@ -131,6 +159,13 @@ export type DialogTagEditProps = {
   id: string
   tagId?: string
   type: 'tagEdit'
+}
+
+export type DialogDirectoryEditProps = {
+  closeDialogId?: string
+  id: string
+  directoryId?: string
+  type: 'directoryEdit'
 }
 
 export type Document = {
@@ -256,6 +291,7 @@ export type SearchFacetName =
   | 'title'
   | 'type'
   | 'width'
+  | 'directory'
 
 export type SearchFacetOperatorType =
   | 'doesNotInclude'
@@ -319,9 +355,18 @@ export type Tag = SanityDocument & {
   }
 }
 
+export type Directory = SanityDocument & {
+  name: string
+  parent?: Directory
+}
+
 export type TagActions = 'applyAll' | 'delete' | 'edit' | 'removeAll' | 'search'
 
+export type DirectoryActions = 'applyAll' | 'create' | 'delete' | 'edit' | 'search' | 'removeAll'
+
 export type TagFormData = z.infer<typeof tagFormSchema>
+
+export type DirectoryFormData = z.infer<typeof directoryFormSchema>
 
 export type TagItem = {
   _type: 'tag'
@@ -331,7 +376,20 @@ export type TagItem = {
   updating: boolean
 }
 
+export type DirectoryItem = {
+  _type: 'directory'
+  directory: Directory
+  parentDirectory?: DirectoryItem | null
+  childDirectories?: DirectoryItem[] | null
+  open?: boolean
+  error?: HttpError
+  picked: boolean
+  updating: boolean
+}
+
 export type TagSelectOption = z.infer<typeof tagOptionSchema>
+
+export type DirectorySelectOption = z.infer<typeof directoryOptionsSchema>
 
 export type UploadItem = {
   _type: 'upload'
