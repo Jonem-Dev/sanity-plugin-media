@@ -17,6 +17,12 @@ export default {
       name: 'parent',
       type: 'reference',
       to: [{type: DIRECTORY_DOCUMENT_NAME}]
+    },
+    {
+      title: 'Protected',
+      name: 'protected',
+      type: 'boolean',
+      initialValue: false,
     }
   ],
   preview: {

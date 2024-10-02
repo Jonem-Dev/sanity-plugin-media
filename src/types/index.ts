@@ -358,6 +358,7 @@ export type Tag = SanityDocument & {
 export type Directory = SanityDocument & {
   name: string
   parent?: Directory
+  protected?: boolean
 }
 
 export type TagActions = 'applyAll' | 'delete' | 'edit' | 'removeAll' | 'search'

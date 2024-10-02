@@ -153,7 +153,9 @@ const Directory = ({directory, root = false}: {root?: boolean; directory: Direct
           }}
         >
           <>
-            {!root && <TrashIcon onClick={handleDeleteDirectory} />}
+            {!root && !directory.directory.protected && (
+              <TrashIcon onClick={handleDeleteDirectory} />
+            )}
             <AddIcon onClick={handleCreateDirectory} />
             {!!directory.open && directory.childDirectories && (
               <ChevronDownIcon onClick={toggleOpen} />

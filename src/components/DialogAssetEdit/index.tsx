@@ -160,7 +160,14 @@ const DialogAssetEdit = (props: Props) => {
                     _ref: tag.value,
                     _type: 'reference',
                     _weak: true
-                  })) || null
+                  })) || null,
+                directory: assetItem.asset.opt?.media?.directory
+                  ? {
+                      _ref: assetItem.asset.opt.media.directory._ref,
+                      _type: 'reference',
+                      _weak: true
+                    }
+                  : null
               }
             }
           }

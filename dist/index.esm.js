@@ -9439,7 +9439,7 @@ const DialogAssetEdit = props => {
     }));
   }, [currentAsset == null ? void 0 : currentAsset._id, dispatch]);
   const onSubmit = useCallback(formData => {
-    var _a3;
+    var _a3, _b, _c;
     if (!(assetItem == null ? void 0 : assetItem.asset)) {
       return;
     }
@@ -9457,7 +9457,12 @@ const DialogAssetEdit = props => {
               _ref: tag.value,
               _type: "reference",
               _weak: true
-            }))) || null
+            }))) || null,
+            directory: ((_c = (_b = assetItem.asset.opt) == null ? void 0 : _b.media) == null ? void 0 : _c.directory) ? {
+              _ref: assetItem.asset.opt.media.directory._ref,
+              _type: "reference",
+              _weak: true
+            } : null
           }
         }
       }
@@ -12819,7 +12824,7 @@ const Directory = _ref97 => {
           whiteSpace: "nowrap"
         },
         children: /* @__PURE__ */jsxs(Fragment, {
-          children: [!root && /* @__PURE__ */jsx(TrashIcon, {
+          children: [!root && !directory.directory.protected && /* @__PURE__ */jsx(TrashIcon, {
             onClick: handleDeleteDirectory
           }), /* @__PURE__ */jsx(AddIcon, {
             onClick: handleCreateDirectory
@@ -13159,6 +13164,11 @@ var mediaDirectory = {
     to: [{
       type: DIRECTORY_DOCUMENT_NAME
     }]
+  }, {
+    title: "Protected",
+    name: "protected",
+    type: "boolean",
+    initialValue: false
   }],
   preview: {
     select: {
