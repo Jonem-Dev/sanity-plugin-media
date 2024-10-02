@@ -153,11 +153,15 @@ const CardAsset = (props: Props) => {
       padding={1}
       draggable
       onDragStart={(e: React.DragEvent<HTMLDivElement>) => {
-        const ghostEl: Element = e.currentTarget.cloneNode(true) as Element
+        const ghostEl: Element = document.createElement('div')
         ghostEl.className += ' drag-ghost'
+
         document.body.appendChild(ghostEl)
         e.dataTransfer.setDragImage(ghostEl, 0, 0)
         e.dataTransfer.setData('assetId', asset._id)
+      }}
+      onDragEnd={() => {
+        document.getElementsByClassName('drag-ghost')[0].remove()
       }}
     >
       <CardContainer direction="column" picked={picked} updating={item.updating}>

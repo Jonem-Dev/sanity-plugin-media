@@ -10786,11 +10786,14 @@ const CardAsset = props => {
     padding: 1,
     draggable: true,
     onDragStart: e => {
-      const ghostEl = e.currentTarget.cloneNode(true);
+      const ghostEl = document.createElement("div");
       ghostEl.className += " drag-ghost";
       document.body.appendChild(ghostEl);
       e.dataTransfer.setDragImage(ghostEl, 0, 0);
       e.dataTransfer.setData("assetId", asset._id);
+    },
+    onDragEnd: () => {
+      document.getElementsByClassName("drag-ghost")[0].remove();
     },
     children: /* @__PURE__ */jsxs(CardContainer, {
       direction: "column",
